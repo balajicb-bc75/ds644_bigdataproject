@@ -1,0 +1,148 @@
+<workflow-app xmlns="uri:oozie:workflow:0.2" name="map-reduce-wf">
+    <start to="ScheduleProbabilities"/>
+    <action name="ScheduleProbabilities">
+        <map-reduce>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <prepare>
+                <delete path="${nameNode}/user/${wf:user()}/${examplesRoot}/output-data/${outputDir_prob}"/>
+            </prepare>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+                <property>
+                    <name>mapreduce.mapper.class</name>
+                            <value>termproject.probability.ScheduleProbabilities$SchProbMapper</value>
+                </property>
+                <property>
+                    <name>mapreduce.reducer.class</name>
+                    <value>termproject.probability.ScheduleProbabilities$SchProdReducer</value>
+                </property>
+                <property>
+                    <name>mapred.map.tasks</name>
+                    <value>1</value>
+                </property>
+                <property>
+                    <name>mapred.input.dir</name>
+                    <value>/user/${wf:user()}/${examplesRoot}/input-data/csvdata</value>
+                </property>
+                <property>
+                    <name>mapred.output.dir</name>
+                    <value>/user/${wf:user()}/${examplesRoot}/output-data/${outputDir_prob}</value>
+                </property>
+            </configuration>
+        </map-reduce>
+        <ok to="SP_PostProcess"/>
+        <error to="fail"/>
+    </action>
+        <action name="SP_PostProcess">
+        <java>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <main-class>termproject.probability.ScheduleProbabilities$PostProcess</main-class>
+            <arg>/user/${wf:user()}/${examplesRoot}/output-data/${outputDir_prob}</arg>
+        </java>
+        <ok to="AvgTaxiTime"/>
+        <error to="fail"/>
+    </action>
+	<action name="AvgTaxiTime">
+        <map-reduce>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <prepare>
+                <delete path="${nameNode}/user/${wf:user()}/${examplesRoot}/output-data/${outputDir_taxi}"/>
+            </prepare>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+                <property>
+                    <name>mapreduce.mapper.class</name>
+                            <value>termproject.taxitime.AvgTaxiTime$taxiTimeMapper</value>
+                </property>
+                <property>
+                    <name>mapreduce.reducer.class</name>
+                    <value>termproject.taxitime.AvgTaxiTime$taxiTimeReducer</value>
+                </property>
+                <property>
+                    <name>mapred.map.tasks</name>
+                    <value>1</value>
+                </property>
+                <property>
+                    <name>mapred.input.dir</name>
+                    <value>/user/${wf:user()}/${examplesRoot}/input-data/csvdata</value>
+                </property>
+                <property>
+                    <name>mapred.output.dir</name>
+                    <value>/user/${wf:user()}/${examplesRoot}/output-data/${outputDir_taxi}</value>
+                </property>
+            </configuration>
+        </map-reduce>
+        <ok to="AT_PostProcess"/>
+        <error to="fail"/>
+    </action>
+        <action name="AT_PostProcess">
+        <java>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <main-class>termproject.taxitime.AvgTaxiTime$PostProcess</main-class>
+            <arg>/user/${wf:user()}/${examplesRoot}/output-data/${outputDir_taxi}</arg>
+        </java>
+        <ok to="CancellationReasonFlight"/>
+        <error to="fail"/>
+    </action>
+	<action name="CancellationReasonFlight">
+        <map-reduce>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <prepare>
+                <delete path="${nameNode}/user/${wf:user()}/${examplesRoot}/output-data/${outputDir_cancel}"/>
+            </prepare>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+                <property>
+                    <name>mapreduce.mapper.class</name>
+                            <value>termproject.cancelreason.CancellationReasonFlight$taxiTimeMapper</value>
+                </property>
+                <property>
+                    <name>mapreduce.reducer.class</name>
+                    <value>termproject.cancelreason.CancellationReasonFlight$taxiTimeReducer</value>
+                </property>
+                <property>
+                    <name>mapred.map.tasks</name>
+                    <value>1</value>
+                </property>
+                <property>
+                    <name>mapred.input.dir</name>
+                    <value>/user/${wf:user()}/${examplesRoot}/input-data/csvdata</value>
+                </property>
+                <property>
+                    <name>mapred.output.dir</name>
+                    <value>/user/${wf:user()}/${examplesRoot}/output-data/${outputDir_cancel}</value>
+                </property>
+            </configuration>
+        </map-reduce>
+        <ok to="CR_PostProcess"/>
+        <error to="fail"/>
+    </action>
+        <action name="CR_PostProcess">
+        <java>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <main-class>termproject.cancelreason.CancellationReasonFlight$PostProcess</main-class>
+            <arg>/user/${wf:user()}/${examplesRoot}/output-data/${outputDir_cancel}</arg>
+        </java>
+        <ok to="end"/>
+        <error to="fail"/>
+    </action>
+    <kill name="fail">
+        <message>Map/Reduce failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+    </kill>
+    <end name="end"/>
+</workflow-app>
